@@ -1,0 +1,31 @@
+services:
+  db:
+    image: mongo:latest
+    ports:
+      - 27018:27017
+    env_file:
+      - ./db/.env
+    healthcheck:
+      test: ["CMD", "mongo", "admin", "--eval", "db.stats()"]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bk
+  mongo-express:
+    image: mongo-express:latest
+    ports:
+      - 8081:8081
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./mongo-express/.env
+    networks:
+      - bk
+      
+
+
+networks:
+  bk:
+    driver: bridge
