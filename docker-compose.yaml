@@ -1,13 +1,17 @@
 services:
   db:
     image: mongo:latest
+    container_name: books-db
     ports:
-      - 27018:27017
+      - 27017:27017
     env_file:
       - ./db/.env
+    volumes:
+      - ./db/init.js:/docker-entrypoint-initdb.d/init.js:ro
+      - ./db/data:/data/db
     healthcheck:
-      test: ["CMD", "mongo", "admin", "--eval", "db.stats()"]
-      interval: 1s
+      test: ["CMD", "mongosh", "localhost:27017/test", "--eval", "db.runCommand('ping').ok"]
+      interval: 5s
       timeout: 5s
       retries: 5
     networks:
@@ -23,8 +27,25 @@ services:
       - ./mongo-express/.env
     networks:
       - bk
-      
-
+  books-api:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: books-api
+    ports:
+      - "8080:8080"
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=books-db
+      - DB_PORT=27017
+      - MONGO_INITDB_USERNAME=
+      - MONGO_INITDB_PASSWORD=
+      - MONGO_INITDB_DATABASE=library
+    networks:
+      - bk
 
 networks:
   bk:
